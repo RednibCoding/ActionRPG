@@ -16,14 +16,14 @@ class Player(cave.Component):
 		self.window = cave.getWindow()
 		self.indicator = self.scene.get("Indicator")
 		self.isAttacking = False
-		self.attackArea = self.entity.getChild("Mesh").getChild("AttackArea")
+		self.attackArea = self.entity.getChild("AttackArea")
 		self.attackAreaBody = self.attackArea.get("Rigid Body")
 
 	def update(self):
 		events = cave.getEvents()
 		self.dt = cave.getDeltaTime()
 		
-		# we need to call this to update the position of a static body
+		# we need to call this to update the position of the rigid body of the attack collision area
 		self.attackArea.submitTransformToWorld()
 		
 		if self.isAttacking:
@@ -35,8 +35,9 @@ class Player(cave.Component):
 			self.mouseRayCast = self.castMouseRay()
 
 		if events.released(cave.event.MOUSE_LEFT):
-			self.mouseRayCast = None
-			self.isAttacking = False
+			# self.mouseRayCast = None
+			# self.isAttacking = False
+			pass
 			
 		if self.mouseRayCast is not None:
 			selfPos = self.transform.getWorldPosition()
@@ -44,7 +45,10 @@ class Player(cave.Component):
 
 			targetPosition =  cave.Vector3(self.mouseRayCast.position.x, 0, self.mouseRayCast.position.z) 
 			
-			self.indicator.getTransform().setPosition(targetPosition.x, 0, targetPosition.z)
+			if cave.hasEditor():
+				self.indicator.getTransform().setPosition(targetPosition.x, 0, targetPosition.z)
+			else:
+				self.indicator.kill()
 			
 			distanceToTarget = (targetPosition - selfPosVec).length()
 
@@ -58,10 +62,16 @@ class Player(cave.Component):
 				self.character.setWalkDirection(0, 0, 0)
 				if self.mouseRayCast.entity.hasTag("enemy"):
 					self.isAttacking = True
+				else:
+					self.isAttacking = False
+					self.mouseRayCast = None
 				
 		else:
-			self.character.setWalkDirection(0, 0, 0)
-			self.mouseRayCast = None
+			# self.character.setWalkDirection(0, 0, 0)
+			pass
+
+		if events.active(cave.event.KEY_SPACE):
+			self.currentAnimation = "dwarf_power"
 		
 		self.animator.playByName(self.currentAnimation, 0.1, 0, True)
 

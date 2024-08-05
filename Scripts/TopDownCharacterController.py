@@ -14,17 +14,13 @@ class Player(cave.Component):
 		self.mouseRayCast: cave.RayCastOut = None
 		self.scene = scene
 		self.window = cave.getWindow()
-		self.indicator = self.scene.get("Indicator")
+		if cave.hasEditor():
+			self.indicator = self.scene.get("Indicator")
 		self.isAttacking = False
-		self.attackArea = self.entity.getChild("AttackArea")
-		self.attackAreaBody = self.attackArea.get("Rigid Body")
 
 	def update(self):
 		events = cave.getEvents()
 		self.dt = cave.getDeltaTime()
-		
-		# we need to call this to update the position of the rigid body of the attack collision area
-		self.attackArea.submitTransformToWorld()
 		
 		if self.isAttacking:
 			self.currentAnimation = "dwarf_attack1"
@@ -38,6 +34,7 @@ class Player(cave.Component):
 			# self.mouseRayCast = None
 			# self.isAttacking = False
 			pass
+
 			
 		if self.mouseRayCast is not None:
 			selfPos = self.transform.getWorldPosition()
@@ -47,8 +44,7 @@ class Player(cave.Component):
 			
 			if cave.hasEditor():
 				self.indicator.getTransform().setPosition(targetPosition.x, 0, targetPosition.z)
-			else:
-				self.indicator.kill()
+				
 			
 			distanceToTarget = (targetPosition - selfPosVec).length()
 

@@ -95,7 +95,6 @@ class EnemyMeleeCombatBehavior(cave.Component):
 				oldPos = self.transform.getPosition()
 				newPos = cave.Vector3(oldPos.x, 0, oldPos.z)
 				self.scene.addFromTemplate("HealthOrb", newPos)
-				print("created")
 
 	
 	def updateHpBar(self):

@@ -44,7 +44,7 @@ class EnemyMeleeCombatBehavior(cave.Component):
 		self.updateDeath()
 
 		if self.dead:
-			if self.dieTimer.get() > 0.2:
+			if self.dieTimer.get() > 0.8:
 				self.entity.removeTag("enemy")
 				self.meshComponent.tint = cave.Vector4(1.0, 1.0, 1.0, 1.0)
 			return
@@ -78,6 +78,7 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			self.dead = True
 			self.character.disable()
 			self.deleteTimer.reset()
+			self.dieTimer.reset()
 
 	def updateDeath(self):
 		if self.dead:

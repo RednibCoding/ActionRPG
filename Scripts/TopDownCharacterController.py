@@ -1,7 +1,7 @@
 import cave
 
 class PlayerController(cave.Component):
-	health = 20.0
+	health = 50.0
 	runSpeed = 4.0
 	hitRecoveryTime = 0.2
 	enemyTag = "enemy"

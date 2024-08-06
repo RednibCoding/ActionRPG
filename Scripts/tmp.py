@@ -1,12 +1,7 @@
-# Try to get the root parent's transform
-root_parent = self.entity.getRootParent()
-if root_parent:
-	self.transf = root_parent.getTransform()
-else:
-	# If no root parent, try to get the parent's transform
-	parent = self.entity.getParent()
-	if parent:
-		self.transf = parent.getTransform()
-	else:
-		# If neither root parent nor parent, use the entity's own transform
-		self.transf = self.entity.getTransform()
+# Calculate elapsed time
+elapsedTime = self.timer.get()
+
+# Calculate alpha using sine function and map to range 0.0 to 0.5
+alpha = 0.25 * (math.sin(elapsedTime * 2 * math.pi) + 1)  # Sine oscillates between -1 and 1
+
+self.deathWarningOverlay.setDefaultQuadAlpha(alpha)

@@ -1,7 +1,7 @@
 import cave
 
 class PlayerController(cave.Component):
-	health = 50.0
+	health = 20.0
 	runSpeed = 4.0
 	hitRecoveryTime = 0.2
 	enemyTag = "enemy"
@@ -23,6 +23,7 @@ class PlayerController(cave.Component):
 		self.isAttacking = False
 
 		self.healthbar = self.entity.getChild("UI").getChild("HealthBar").get("UI Element")
+		self.deathWarningOverlay = self.entity.getChild("UI").getChild("DeathWarning").get("UI Element")
 
 		self.idleAnimName:str = self.entity.name.lower().strip() + "_idle"
 		self.runAnimName:str = self.entity.name.lower().strip() + "_run"
@@ -39,17 +40,19 @@ class PlayerController(cave.Component):
 		self.dead = False
 		self.dieTimer = cave.SceneTimer()
 
+		self.deathWarningPulseTimer = cave.SceneTimer()
+
 	def update(self):
 		events = cave.getEvents()
 		self.dt = cave.getDeltaTime()
+
+		self.updateHpBarAndDeathWarning()
 		
 		if self.dead:
 			if self.dieTimer.get() > 0.2:
 				self.entity.removeTag("player")
 				self.meshComponent.tint = cave.Vector4(1.0, 1.0, 1.0, 1.0)
 			return
-
-		self.updateHpBar()
 
 		if self.recoveryFromHitTimer.get() > self.hitRecoveryTime:
 			self.recoveryFromHit = False
@@ -110,8 +113,6 @@ class PlayerController(cave.Component):
 		self.curHp -= amount
 		if self.curHp < 0: self.curHp = 0
 
-		self.updateHpBar()
-
 		self.recoveryFromHit = True
 		self.recoveryFromHitTimer.reset()
 		self.meshComponent.tint = cave.Vector4(1.0, 0.5, 0.5, 1.0)
@@ -128,23 +129,31 @@ class PlayerController(cave.Component):
 			self.dieTimer.reset()
 			self.character.disable()
 
-	def updateHpBar(self):
+	def updateHpBarAndDeathWarning(self):
 		newXScale = 0.07 * (self.curHp / self.health)
 		self.healthbar.scale = cave.UIVector(newXScale, 0.0165)
 
 		hpPercent = (self.curHp / self.health) * 100
 
 		self.healthbar.setDefaultQuadColor(cave.Vector3(0.0, 1.0, 0.0))
+		self.deathWarningOverlay.setDefaultQuadAlpha(0.0)
 
-		if hpPercent < 50 and hpPercent > 30:
+		if hpPercent < 50 and hpPercent > 35:
 			self.healthbar.setDefaultQuadColor(cave.Vector3(1.0, 1.0, 0.0))
-		elif hpPercent < 30:
+		elif hpPercent < 35:
 			self.healthbar.setDefaultQuadColor(cave.Vector3(1.0, 0.0, 0.0))
+
+			# pulsating warning overlay
+			elapsedTime = self.deathWarningPulseTimer.get()
+			# Calculate alpha using sine function and map to range 0.1 to 0.5
+			alpha = 0.1 + 0.2 * (cave.math.sin(elapsedTime * 1 * 3.1419) + 1)
+			self.deathWarningOverlay.setDefaultQuadAlpha(alpha)
 
 		if self.curHp <= 0:
 			self.healthbar.setDefaultQuadAlpha(0.0)
 		else:
 			self.healthbar.setDefaultQuadAlpha(0.6)
+
 
 	def end(self, scene):
 		pass

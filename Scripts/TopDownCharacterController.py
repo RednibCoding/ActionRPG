@@ -22,7 +22,7 @@ class PlayerController(cave.Component):
 		self.selectionCircle = self.scene.get("SelectionCircle")
 		self.isAttacking = False
 
-		self.healthbar = self.entity.getChild("HealthBar").get("UI Element")
+		self.healthbar = self.entity.getChild("UI").getChild("HealthBar").get("UI Element")
 
 		self.idleAnimName:str = self.entity.name.lower().strip() + "_idle"
 		self.runAnimName:str = self.entity.name.lower().strip() + "_run"

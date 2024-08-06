@@ -71,6 +71,7 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			self.die()
 		else:
 			self.animator.playByName(self.hitAnimName, 0.1, 0, False)
+
 	
 	def die(self):
 		if not self.dead:
@@ -91,6 +92,10 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			
 			if elapsedTime > 11.0:
 				self.entity.kill()
+				oldPos = self.transform.getPosition()
+				newPos = cave.Vector3(oldPos.x, 0, oldPos.z)
+				self.scene.addFromTemplate("HealthOrb", newPos)
+				print("created")
 
 	
 	def updateHpBar(self):
@@ -131,8 +136,6 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			self.animator.playByName(self.idleAnimName, 0.1, 0, True)
 			self.character.setWalkDirection(0, 0, 0)
 
-					
-	
 		
 	def end(self, scene):
 		pass

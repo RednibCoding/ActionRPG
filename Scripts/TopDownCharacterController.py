@@ -22,7 +22,7 @@ class PlayerController(cave.Component):
 		self.selectionCircle = self.scene.get("SelectionCircle")
 		self.isAttacking = False
 
-		self.healthbar = self.entity.getChild("UI").getChild("HealthBar").get("UI Element")
+		self.healthbar = self.entity.getChild("UI").getChild("Portrait").getChild("HealthBar").get("UI Element")
 		self.deathWarningOverlay = self.entity.getChild("UI").getChild("DeathWarning").get("UI Element")
 
 		self.idleAnimName:str = self.entity.name.lower().strip() + "_idle"
@@ -121,6 +121,10 @@ class PlayerController(cave.Component):
 			self.die()
 		else:
 			self.animator.playByName(self.hitAnimName, 0.1, 0, False)
+	
+	def receiveHeal(self, amount):
+		self.curHp += amount
+		if self.curHp > self.health: self.curHp = self.health
 
 	def die(self):
 		if not self.dead:
@@ -130,8 +134,8 @@ class PlayerController(cave.Component):
 			self.character.disable()
 
 	def updateHpBarAndDeathWarning(self):
-		newXScale = 0.07 * (self.curHp / self.health)
-		self.healthbar.scale = cave.UIVector(newXScale, 0.0165)
+		newXScale = 0.6 * (self.curHp / self.health)
+		self.healthbar.scale.setRelativeX(newXScale)
 
 		hpPercent = (self.curHp / self.health) * 100
 

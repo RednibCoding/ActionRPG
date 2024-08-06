@@ -14,8 +14,7 @@ class Player(cave.Component):
 		self.mouseRayCast: cave.RayCastOut = None
 		self.scene = scene
 		self.window = cave.getWindow()
-		if cave.hasEditor():
-			self.indicator = self.scene.get("Indicator")
+		self.selectionCircle = self.scene.get("SelectionCircle")
 		self.isAttacking = False
 
 	def update(self):
@@ -30,29 +29,34 @@ class Player(cave.Component):
 		if events.active(cave.event.MOUSE_LEFT):
 			self.mouseRayCast = self.castMouseRay()
 
-		if events.released(cave.event.MOUSE_LEFT):
-			# self.mouseRayCast = None
-			# self.isAttacking = False
-			pass
-
 			
 		if self.mouseRayCast is not None:
 			selfPos = self.transform.getWorldPosition()
 			selfPosVec = cave.Vector3(selfPos.x, 0, selfPos.z)
 
+			isEnemyTarget = False
+
+			if self.mouseRayCast.entity != None and self.mouseRayCast.entity.hasTag("enemy"):
+				isEnemyTarget = True
+				targetEntityPos = self.mouseRayCast.entity.getTransform().getPosition()
+				self.mouseRayCast.position = cave.Vector3(targetEntityPos.x, 0, targetEntityPos.z)
+
 			targetPosition =  cave.Vector3(self.mouseRayCast.position.x, 0, self.mouseRayCast.position.z) 
-			
-			if cave.hasEditor():
-				self.indicator.getTransform().setPosition(targetPosition.x, 0, targetPosition.z)
+
+			if isEnemyTarget:
+				self.selectionCircle.getTransform().setPosition(targetPosition.x, 0.01, targetPosition.z)
+			else:
+				self.selectionCircle.getTransform().setPosition(0, -100, 0)
 				
 			
 			distanceToTarget = (targetPosition - selfPosVec).length()
 
-			if distanceToTarget > 1: # check if target location has been reached
+			direction = (targetPosition - selfPosVec).normalized()
+			self.meshTransform.lookAtSmooth(-direction, 0.2)
+
+			if distanceToTarget > 1.5: # check if target location has been reached
 				self.currentAnimation = "dwarf_run"
 				self.isAttacking = False
-				direction = (targetPosition - selfPosVec).normalized()
-				self.meshTransform.lookAtSmooth(-direction, 0.2)
 				self.character.setWalkDirection(direction * self.runSpeed * self.dt)
 			else:
 				self.character.setWalkDirection(0, 0, 0)
@@ -60,11 +64,8 @@ class Player(cave.Component):
 					self.isAttacking = True
 				else:
 					self.isAttacking = False
+					self.selectionCircle.getTransform().setPosition(0, -100, 0)
 					self.mouseRayCast = None
-				
-		else:
-			# self.character.setWalkDirection(0, 0, 0)
-			pass
 
 		if events.active(cave.event.KEY_SPACE):
 			self.currentAnimation = "dwarf_power"

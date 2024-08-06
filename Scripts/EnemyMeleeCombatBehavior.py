@@ -86,11 +86,11 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			elapsedTime = self.deleteTimer.get()
 			
 			# let sink the corpse into the ground over 11 seconds
-			if elapsedTime > 5.0 and elapsedTime <= 11.0:
+			if elapsedTime > 3.0 and elapsedTime <= 6.0:
 				pos = self.transform.getPosition()
-				self.transform.setPosition(pos.x, pos.y-0.002, pos.z)
+				self.transform.setPosition(pos.x, pos.y-0.005, pos.z)
 			
-			if elapsedTime > 11.0:
+			if elapsedTime > 6.0:
 				self.entity.kill()
 				oldPos = self.transform.getPosition()
 				newPos = cave.Vector3(oldPos.x, 0, oldPos.z)

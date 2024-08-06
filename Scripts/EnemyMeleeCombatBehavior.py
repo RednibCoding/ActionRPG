@@ -2,7 +2,7 @@ import cave
 
 class EnemyMeleeCombatBehavior(cave.Component):
 	health = 5
-	sightRadius = 6.0
+	sightRadius = 7.0
 	runSpeed = 2.0
 	hitRecoveryTime = 0.5
 	playerTag = "player"
@@ -10,14 +10,15 @@ class EnemyMeleeCombatBehavior(cave.Component):
 	def start(self, scene):
 		self.scene = scene
 		self.character = self.entity.get("Character")
-		self.meshComponent = self.entity.getChild("Mesh").get("Mesh")
+		self.transform = self.entity.getTransform()
+		self.mesh = self.entity.getChild("Mesh")
+		self.meshTransform = self.mesh.getTransform()
+		self.meshComponent = self.mesh.get("Mesh")
 		self.healthbar = self.entity.getChild("HealthBar").get("UI Element")
 		self.animator = self.entity.getChild("Mesh").get("Animation")
-		self.dead = False
 		self.curHp = self.health
 		self.camera = cave.getCurrentScene().getCamera()
 		self.deleteTimer = cave.SceneTimer()
-		self.transform = self.entity.getTransform()
 		self.isAttacking = False
 
 		self.idleAnimName:str = self.entity.name.lower().strip() + "_idle"
@@ -32,12 +33,22 @@ class EnemyMeleeCombatBehavior(cave.Component):
 		# entities with tag enemy can be attacked by the player
 		self.entity.addTag("enemy")
 
+		self.dead = False
+		self.dieTimer = cave.SceneTimer()
+
 		self.animator.playByName(self.idleAnimName, 0.1, 0, True)
 
 	def update(self):
 		events = cave.getEvents()
 		self.entity.submitTransformToWorld()
 		self.updateDeath()
+
+		if self.dead:
+			if self.dieTimer.get() > 0.2:
+				self.entity.removeTag("enemy")
+				self.meshComponent.tint = cave.Vector4(1.0, 1.0, 1.0, 1.0)
+			return
+
 
 		if self.recoveryFromHitTimer.get() > self.hitRecoveryTime:
 			self.recoveryFromHit = False
@@ -60,7 +71,6 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			self.die()
 		else:
 			self.animator.playByName(self.hitAnimName, 0.1, 0, False)
-
 	
 	def die(self):
 		if not self.dead:
@@ -99,7 +109,7 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			if collision.entity.hasTag(self.playerTag):
 				playerInSight = True
 				break
-		
+
 		if playerInSight:
 			targetPosition = collision.entity.getTransform().getWorldPosition()
 			selfPos = self.transform.getWorldPosition()
@@ -109,15 +119,16 @@ class EnemyMeleeCombatBehavior(cave.Component):
 			distanceToTarget = (targetPosition - selfPos).length()
 
 			if distanceToTarget > 1.5:
+				self.character.setWalkDirection(0, 0, self.runSpeed * cave.getDeltaTime())
+				# self.transform.move(0, 0, self.runSpeed * cave.getDeltaTime())
 				# self.character.setWalkDirection(direction * self.runSpeed * cave.getDeltaTime())
-				self.transform.move(0, 0, self.runSpeed * cave.getDeltaTime())
 				self.animator.playByName(self.runAnimName, 0.1, 0, True)
 			else:
 				self.animator.playByName(self.attackAnimName, 0.1, 0, True)
 				# self.character.setWalkDirection(0, 0, 0)
 		else:
 			self.animator.playByName(self.idleAnimName, 0.1, 0, True)
-			# self.character.setWalkDirection(0, 0, 0)
+			self.character.setWalkDirection(0, 0, 0)
 
 					
 	

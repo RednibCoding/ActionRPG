@@ -1,11 +1,16 @@
 import cave
 
-class Player(cave.Component):
+class PlayerController(cave.Component):
+	health = 20.0
+	runSpeed = 4.0
+	hitRecoveryTime = 0.2
+	enemyTag = "enemy"
+
 	def start(self, scene):
-		self.runSpeed = 4
 		self.transform = self.entity.getTransform()
 		self.character = self.entity.get("Character")
 		self.mesh = self.entity.getChild("Mesh")
+		self.meshComponent = self.mesh.get("Mesh")
 		self.meshTransform = self.mesh.getTransform()
 		self.animator = self.mesh.get("Animation")
 		self.currentAnimation = "dwarf_idle"
@@ -17,14 +22,43 @@ class Player(cave.Component):
 		self.selectionCircle = self.scene.get("SelectionCircle")
 		self.isAttacking = False
 
+		self.healthbar = self.entity.getChild("HealthBar").get("UI Element")
+
+		self.idleAnimName:str = self.entity.name.lower().strip() + "_idle"
+		self.runAnimName:str = self.entity.name.lower().strip() + "_run"
+		self.attack1AnimName:str = self.entity.name.lower().strip() + "_attack1"
+		self.powerAnimName:str = self.entity.name.lower().strip() + "_power"
+		self.hitAnimName:str = self.entity.name.lower().strip() + "_hit"
+		self.deathAnimName:str = self.entity.name.lower().strip() + "_death"
+
+		self.curHp = self.health
+
+		self.recoveryFromHit = False
+		self.recoveryFromHitTimer = cave.SceneTimer()
+
+		self.dead = False
+		self.dieTimer = cave.SceneTimer()
+
 	def update(self):
 		events = cave.getEvents()
 		self.dt = cave.getDeltaTime()
 		
+		if self.dead:
+			if self.dieTimer.get() > 0.2:
+				self.entity.removeTag("player")
+				self.meshComponent.tint = cave.Vector4(1.0, 1.0, 1.0, 1.0)
+			return
+
+		self.updateHpBar()
+
+		if self.recoveryFromHitTimer.get() > self.hitRecoveryTime:
+			self.recoveryFromHit = False
+			self.meshComponent.tint = cave.Vector4(1.0, 1.0, 1.0, 1.0)
+		
 		if self.isAttacking:
-			self.currentAnimation = "dwarf_attack1"
+			self.currentAnimation = self.attack1AnimName
 		else:
-			self.currentAnimation = "dwarf_idle"
+			self.currentAnimation = self.idleAnimName
 
 		if events.active(cave.event.MOUSE_LEFT):
 			self.mouseRayCast = self.castMouseRay()
@@ -36,31 +70,31 @@ class Player(cave.Component):
 
 			isEnemyTarget = False
 
-			if self.mouseRayCast.entity != None and self.mouseRayCast.entity.hasTag("enemy"):
+			if self.mouseRayCast.entity != None and self.mouseRayCast.entity.hasTag(self.enemyTag):
 				isEnemyTarget = True
 				targetEntityPos = self.mouseRayCast.entity.getTransform().getPosition()
 				self.mouseRayCast.position = cave.Vector3(targetEntityPos.x, 0, targetEntityPos.z)
 
-			targetPosition =  cave.Vector3(self.mouseRayCast.position.x, 0, self.mouseRayCast.position.z) 
+			targetPosVec =  cave.Vector3(self.mouseRayCast.position.x, 0, self.mouseRayCast.position.z) 
 
 			if isEnemyTarget:
-				self.selectionCircle.getTransform().setPosition(targetPosition.x, 0.01, targetPosition.z)
+				self.selectionCircle.getTransform().setPosition(targetPosVec.x, 0.01, targetPosVec.z)
 			else:
 				self.selectionCircle.getTransform().setPosition(0, -100, 0)
 				
 			
-			distanceToTarget = (targetPosition - selfPosVec).length()
+			distanceToTarget = (targetPosVec - selfPosVec).length()
 
-			direction = (targetPosition - selfPosVec).normalized()
+			direction = (targetPosVec - selfPosVec).normalized()
 			self.meshTransform.lookAtSmooth(-direction, 0.2)
 
 			if distanceToTarget > 1.5: # check if target location has been reached
-				self.currentAnimation = "dwarf_run"
+				self.currentAnimation = self.runAnimName
 				self.isAttacking = False
 				self.character.setWalkDirection(direction * self.runSpeed * self.dt)
 			else:
 				self.character.setWalkDirection(0, 0, 0)
-				if self.mouseRayCast.entity.hasTag("enemy"):
+				if self.mouseRayCast.entity.hasTag(self.enemyTag):
 					self.isAttacking = True
 				else:
 					self.isAttacking = False
@@ -68,15 +102,55 @@ class Player(cave.Component):
 					self.mouseRayCast = None
 
 		if events.active(cave.event.KEY_SPACE):
-			self.currentAnimation = "dwarf_power"
+			self.currentAnimation = self.powerAnimName
 		
 		self.animator.playByName(self.currentAnimation, 0.1, 0, True)
+	
+	def receiveDamage(self, amount):
+		self.curHp -= amount
+		if self.curHp < 0: self.curHp = 0
 
+		self.updateHpBar()
+
+		self.recoveryFromHit = True
+		self.recoveryFromHitTimer.reset()
+		self.meshComponent.tint = cave.Vector4(1.0, 0.5, 0.5, 1.0)
+
+		if self.curHp == 0:
+			self.die()
+		else:
+			self.animator.playByName(self.hitAnimName, 0.1, 0, False)
+
+	def die(self):
+		if not self.dead:
+			self.animator.playByName(self.deathAnimName, 0.1, 0, False)
+			self.dead = True
+			self.dieTimer.reset()
+			self.character.disable()
+
+	def updateHpBar(self):
+		newXScale = 0.07 * (self.curHp / self.health)
+		self.healthbar.scale = cave.UIVector(newXScale, 0.0165)
+
+		hpPercent = (self.curHp / self.health) * 100
+
+		self.healthbar.setDefaultQuadColor(cave.Vector3(0.0, 1.0, 0.0))
+
+		if hpPercent < 50 and hpPercent > 30:
+			self.healthbar.setDefaultQuadColor(cave.Vector3(1.0, 1.0, 0.0))
+		elif hpPercent < 30:
+			self.healthbar.setDefaultQuadColor(cave.Vector3(1.0, 0.0, 0.0))
+
+		if self.curHp <= 0:
+			self.healthbar.setDefaultQuadAlpha(0.0)
+		else:
+			self.healthbar.setDefaultQuadAlpha(0.6)
 
 	def end(self, scene):
 		pass
 
 	def castMouseRay(self) -> cave.RayCastOut:
+		if self.dead: return
 		mousePos = cave.getMousePosition()
 		mxn = mousePos.x / self.window.getWindowSize().x
 		myn = mousePos.y / self.window.getWindowSize().y
